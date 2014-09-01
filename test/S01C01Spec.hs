@@ -24,6 +24,18 @@ spec = do
     it "should decode a base64 string" $ do
         hexToByteString "13a1" `shouldBe` BS.pack [19, 161]
 
+    it "should encode a ByteString to an int list" $ do
+        bytestringToIntList (BS.pack [19, 161]) `shouldBe` [19, 161]
+
+    it "should convert an integer between 0 and 15 into a single hex character" $ do
+        hex 13 `shouldBe` Just 'D'
+
+    it "should encode a ByteString to hex" $ do
+        bytestringToHex (BS.pack [19, 161]) `shouldBe` "13A1"
+
+    it "should round-trip to/from ByteString" $ do
+        (bytestringToHex $ hexToByteString "13A1") `shouldBe` "13A1"
+
   describe "base64" $ do
     it "should encode a hex string into base64" $ do
         let hexstring = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d"
