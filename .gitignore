@@ -1,6 +1,9 @@
 # Ignore vim swapfiles
 .*.sw*
 
+# Ignore tags
+tags
+
 # Ignore cabal sandbox
 .cabal-sandbox
 cabal.sandbox.config
