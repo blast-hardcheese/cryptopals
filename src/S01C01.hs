@@ -11,7 +11,9 @@ unpackHexPairList :: [(Char, Char)] -> [Int]
 unpackHexPairList = catMaybes . (fmap unpackHexPair)
 
 unpackHexPair :: (Char, Char) -> Maybe Int
-unpackHexPair (c1, c2) = (unhex c1) >>= (\x -> (unhex c2) >>= (\y -> Just $ x * 16 + y))
+unpackHexPair (c1, c2) = do x <- unhex c1
+                            y <- unhex c2
+                            return $ x*16 + y
 
 unhex :: Char -> Maybe Int
 unhex c = L.findIndex (== c) ord
