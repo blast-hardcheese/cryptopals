@@ -34,6 +34,9 @@ spec = do
     it "should encode a ByteString to hex" $ do
         bytestringToHex (BS.pack [19, 161]) `shouldBe` "13A1"
 
+    it "should encode a ByteString to hex preserving leading zeroes" $ do
+        bytestringToHex (BS.pack [5, 5]) `shouldBe` "0505"
+
     it "should round-trip to/from ByteString" $ do
         (bytestringToHex $ hexToByteString "13A1") `shouldBe` "13A1"
 

@@ -48,18 +48,16 @@ unpackHexPair (c1, c2) = do x <- unhex c1
 
 -- byte string to hex string
 bytestringToHex :: BS.ByteString -> [Char]
-bytestringToHex bs = catMaybes $ concat $ fmap bighex l
+bytestringToHex bs = concat $ catMaybes $ fmap hexpair l
                    where l = bytestringToIntList bs
 
 bytestringToIntList :: BS.ByteString -> [Int]
 bytestringToIntList bs = BS.foldr (\b a -> (fromIntegral $ toInteger b) : a) [] bs
 
-bighexiter :: Int -> [Maybe Char]
-bighexiter 0 = []
-bighexiter num = (hex $ num `mod` 16) : bighex (num `div` 16)
-
-bighex :: Int -> [Maybe Char]
-bighex = reverse . bighexiter
+hexpair :: Int -> Maybe [Char]
+hexpair i = do x <- hex (i `div` 16)
+               y <- hex (i `mod` 16)
+               Just [x, y]
 
 -- base64 stuff
 type B64Buff = (W.Word16, Int)
