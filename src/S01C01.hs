@@ -9,6 +9,32 @@ import Data.Bits
 
 import qualified Data.Char as C
 
+-- utilities
+
+w8toInt :: W.Word8 -> Int
+w8toInt = fromIntegral . toInteger
+
+w8tow16 :: W.Word8 -> W.Word16
+w8tow16 = fromIntegral . toInteger
+
+w16tow8 :: W.Word16 -> W.Word8
+w16tow8 = fromIntegral . toInteger
+
+pairs :: String -> [(Char, Char)]  -- Drops incomplete pairs. "abc" == [('a', 'b')]
+pairs (c1 : c2 : s) = (c1, c2) : pairs s
+pairs _ = []
+
+hex :: Int -> Maybe Char
+hex b = "0123456789ABCDEF" ^? ix b
+
+unhex :: Char -> Maybe Int
+unhex c = L.findIndex (== C.toUpper c) ord
+         where ord = "0123456789ABCDEF"
+
+b64 :: Int -> Maybe Char
+b64 b = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" ^? ix b
+
+-- hex string to byte string
 hexToByteString :: String -> BS.ByteString
 hexToByteString = BS.pack . (fmap fromIntegral) . unpackHexPairList . pairs
 
@@ -20,14 +46,7 @@ unpackHexPair (c1, c2) = do x <- unhex c1
                             y <- unhex c2
                             return $ x*16 + y
 
-unhex :: Char -> Maybe Int
-unhex c = L.findIndex (== C.toUpper c) ord
-         where ord = "0123456789ABCDEF"
-
-pairs :: String -> [(Char, Char)]  -- Drops incomplete pairs. "abc" == [('a', 'b')]
-pairs (c1 : c2 : s) = (c1, c2) : pairs s
-pairs _ = []
-
+-- byte string to hex string
 bytestringToHex :: BS.ByteString -> [Char]
 bytestringToHex bs = catMaybes $ concat $ fmap bighex l
                    where l = bytestringToIntList bs
@@ -42,13 +61,8 @@ bighexiter num = (hex $ num `mod` 16) : bighex (num `div` 16)
 bighex :: Int -> [Maybe Char]
 bighex = reverse . bighexiter
 
-hex :: Int -> Maybe Char
-hex b = "0123456789ABCDEF" ^? ix b
-
+-- base64 stuff
 type B64Buff = (W.Word16, Int)
-
-w8toInt :: W.Word8 -> Int
-w8toInt = fromIntegral . toInteger
 
 chunkByteString :: BS.ByteString -> [Int]
 chunkByteString bs = fmap w8toInt $ reverse $ concat words
@@ -58,12 +72,6 @@ chunkByteString bs = fmap w8toInt $ reverse $ concat words
 chunkFold :: ([[W.Word8]], B64Buff) -> W.Word8 -> ([[W.Word8]], B64Buff)
 chunkFold (a, buff) n = (words : a, newbuff)
                         where (words, newbuff) = processBuffer n buff
-
-w8tow16 :: W.Word8 -> W.Word16
-w8tow16 = fromIntegral . toInteger
-
-w16tow8 :: W.Word16 -> W.Word8
-w16tow8 = fromIntegral . toInteger
 
 flushBuffer :: B64Buff -> [W.Word8]
 flushBuffer (bits, size) = fst $ doBuffer (bits, 6)
@@ -86,9 +94,6 @@ processBuffer in8 buff = (reverse r, b)
                buffer = in16 .|. (shift (fst buff) wordsize)
                buffsize = wordsize + snd buff
                (r, b) = doBuffer (buffer, buffsize)
-
-b64 :: Int -> Maybe Char
-b64 b = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" ^? ix b
 
 base64 :: String -> String
 base64 = catMaybes . (fmap b64) . chunkByteString . hexToByteString
