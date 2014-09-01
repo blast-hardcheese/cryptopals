@@ -5,6 +5,7 @@ import Test.Hspec
 import S01C01
 
 import qualified Data.ByteString as BS
+import qualified Data.Bits as Bits
 
 main :: IO()
 main = hspec spec
@@ -37,6 +38,16 @@ spec = do
         (bytestringToHex $ hexToByteString "13A1") `shouldBe` "13A1"
 
   describe "base64" $ do
+    it "should chunk new input with existing buffer" $ do
+        let buildBits n = (Bits.shift 1 n) - 1
+        let fourBits = buildBits 4
+        let sixBits = buildBits 6
+        let eightBits = buildBits 8
+        processBuffer eightBits (fourBits, 4) `shouldBe` ([sixBits, sixBits], (0, 0))
+
+    it "should chunk a ByteString into 6-bit Word8s" $ do
+        chunkByteString (hexToByteString "13A1") `shouldBe` [4, 58]
+
     it "should encode a hex string into base64" $ do
         let hexstring = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d"
-        base64 hexstring `shouldBe` Just "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
+        base64 hexstring `shouldBe` "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"

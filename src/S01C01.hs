@@ -1,9 +1,11 @@
 module S01C01 where
 
 import qualified Data.ByteString as BS
+import qualified Data.Word as W
 import qualified Data.List as L
 import Data.Maybe
 import Control.Lens
+import Data.Bits
 
 import qualified Data.Char as C
 
@@ -43,5 +45,50 @@ bighex = reverse . bighexiter
 hex :: Int -> Maybe Char
 hex b = "0123456789ABCDEF" ^? ix b
 
-base64 :: String -> Maybe String
-base64 _ = Nothing
+type B64Buff = (W.Word16, Int)
+
+w8toInt :: W.Word8 -> Int
+w8toInt = fromIntegral . toInteger
+
+chunkByteString :: BS.ByteString -> [Int]
+chunkByteString bs = fmap w8toInt $ reverse $ concat words
+                     where (wholewords, newbuff) = BS.foldl chunkFold ([], (0, 0)) bs
+                           words = wholewords
+
+chunkFold :: ([[W.Word8]], B64Buff) -> W.Word8 -> ([[W.Word8]], B64Buff)
+chunkFold (a, buff) n = (words : a, newbuff)
+                        where (words, newbuff) = processBuffer n buff
+
+w8tow16 :: W.Word8 -> W.Word16
+w8tow16 = fromIntegral . toInteger
+
+w16tow8 :: W.Word16 -> W.Word8
+w16tow8 = fromIntegral . toInteger
+
+flushBuffer :: B64Buff -> [W.Word8]
+flushBuffer (bits, size) = fst $ doBuffer (bits, 6)
+
+doBuffer :: B64Buff -> ([W.Word8], B64Buff)
+doBuffer b@(bits, size)
+    | size < 6 = ([], b)
+    | otherwise = (extracted : nextbits, nextbuff)
+                  where mask = (shift 1 6) - 1 :: W.Word16
+                        shiftedmask = (shift mask (size - 6))
+                        masked = shiftedmask .&. bits
+                        extracted = w16tow8 $ shift masked (-size + 6)
+                        newBuff = (complement shiftedmask) .&. bits
+                        (nextbits, nextbuff) = doBuffer (newBuff, size - 6)
+
+processBuffer :: W.Word8 -> B64Buff -> ([W.Word8], B64Buff)
+processBuffer in8 buff = (reverse r, b)
+         where wordsize = 8
+               in16 = w8tow16 in8
+               buffer = in16 .|. (shift (fst buff) wordsize)
+               buffsize = wordsize + snd buff
+               (r, b) = doBuffer (buffer, buffsize)
+
+b64 :: Int -> Maybe Char
+b64 b = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" ^? ix b
+
+base64 :: String -> String
+base64 = catMaybes . (fmap b64) . chunkByteString . hexToByteString
