@@ -3,3 +3,6 @@ tags:
 
 S01C01:
 	cabal exec -- runhaskell -isrc:src test/S01C01Spec.hs
+
+S01C02:
+	cabal exec -- runhaskell -isrc:src test/S01C02Spec.hs
