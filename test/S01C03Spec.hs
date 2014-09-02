@@ -30,6 +30,23 @@ spec = do
 
       (L.sort $ HM.keys hm) `shouldBe` (L.sort letters)
 
+    it "should be able to build letter freq maps" $ do
+      let hm = buildLetterFreqMap $ buildFilteredLetterMap $ s2ByteString "ab"
+      hm `shouldBe` HM.fromList [('a', 0.5), ('b', 0.5)]
+
+    it "should be able to build more letter freq maps" $ do
+      let hm = buildLetterFreqMap $ buildFilteredLetterMap $ s2ByteString "abac"
+      hm `shouldBe` HM.fromList [('a', 0.5), ('b', 0.25), ('c', 0.25)]
+
+    it "should know that some letters are more common than others in english" $ do
+      let engString   = "The quick brown fox jumped over the lazy dog."
+      let bogusString = "Xyr ffxxz qurvv xqa mffezz ppmk jzq rrez qaz."
+
+      let testEnglish = (flip checkLetterFreqMap) englishLetterFreqs
+      let engLower = (testEnglish $ s2lfm engString) < (testEnglish $ s2lfm bogusString)
+
+      engLower `shouldBe` True
+
     it "should find cypher byte" $ do
       let ct = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
       analyze ct `shouldBe` 5
