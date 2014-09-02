@@ -5,6 +5,7 @@ import qualified Data.ByteString as BS
 import qualified Data.HashMap as HM
 import qualified Data.List as L
 
+import qualified S01C01 (hexToByteString)
 import S01C03
 
 main :: IO()
@@ -39,14 +40,12 @@ spec = do
       hm `shouldBe` HM.fromList [('a', 0.5), ('b', 0.25), ('c', 0.25)]
 
     it "should know that some letters are more common than others in english" $ do
-      let engString   = "The quick brown fox jumped over the lazy dog."
-      let bogusString = "Xyr ffxxz qurvv xqa mffezz ppmk jzq rrez qaz."
+      let engbs   = s2ByteString "I wonder if this will end up flagging as english or not."
 
-      let testEnglish = (flip checkLetterFreqMap) englishLetterFreqs
-      let engLower = (testEnglish $ s2lfm engString) < (testEnglish $ s2lfm bogusString)
+      let engList = probableList engbs
 
-      engLower `shouldBe` True
+      (fst $ head engList) `shouldBe` 0
 
     it "should find cypher byte" $ do
-      let ct = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
-      analyze ct `shouldBe` 5
+      let ct = S01C01.hexToByteString "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
+      analyze ct `shouldBe` 88

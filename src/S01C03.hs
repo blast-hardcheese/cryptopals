@@ -7,6 +7,7 @@ import qualified "hashmap" Data.HashSet as HS
 import qualified Data.Word as W
 import qualified Data.ByteString as BS
 import qualified Data.Char as C
+import qualified Data.List as L
 
 import qualified S01C02
 
@@ -82,5 +83,23 @@ englishLetterFreqs l = case l of
 
 -- Process xor stuff
 
-analyze :: String -> W.Word8
-analyze _ = 0
+analyze :: BS.ByteString -> W.Word8
+analyze = fst . head . probableList
+
+probableList :: BS.ByteString -> [(W.Word8, Float)]
+probableList = (L.sortBy (\a b -> if snd a > snd b then LT else GT)) . buildAnalyzeList
+
+buildAnalyzeList :: BS.ByteString -> [(W.Word8, Float)]
+buildAnalyzeList bs = raw
+    where decyphered = [(b, applySingleByte b bs) | b <- [0..255]]
+          printable = filterPrintable decyphered
+          raw = fmap (\(b, bs) -> (b, getEnglishProb $ buildLetterFreqMap $ buildFilteredLetterMap bs)) printable
+
+filterPrintable :: [(W.Word8, BS.ByteString)] -> [(W.Word8, BS.ByteString)]
+filterPrintable = L.filter (\(_, bs) -> isPrintable bs)
+
+isPrintable :: BS.ByteString -> Bool
+isPrintable = (== Nothing) . (BS.find (\b -> b > 127 || b < 32))
+
+getEnglishProb :: HM.Map Char Float -> Float
+getEnglishProb = flip checkLetterFreqMap $ englishLetterFreqs
