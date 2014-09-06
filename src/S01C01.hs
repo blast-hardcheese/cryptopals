@@ -27,7 +27,7 @@ hexToByteString :: String -> BS.ByteString
 hexToByteString = BS.pack . (fmap fromIntegral) . unpackHexPairList . pairs
 
 unpackHexPairList :: [(Char, Char)] -> [Int]
-unpackHexPairList = catMaybes . (fmap unpackHexPair)
+unpackHexPairList = mapMaybe unpackHexPair
 
 unpackHexPair :: (Char, Char) -> Maybe Int
 unpackHexPair (c1, c2) = do x <- unhex c1
@@ -36,7 +36,7 @@ unpackHexPair (c1, c2) = do x <- unhex c1
 
 -- byte string to hex string
 bytestringToHex :: BS.ByteString -> [Char]
-bytestringToHex bs = concat $ catMaybes $ fmap hexpair l
+bytestringToHex bs = concat $ mapMaybe hexpair l
                    where l = bytestringToIntList bs
 
 bytestringToIntList :: BS.ByteString -> [Int]
@@ -82,4 +82,4 @@ processBuffer in8 buff = (reverse r, b)
                (r, b) = doBuffer (buffer, buffsize)
 
 base64 :: String -> String
-base64 = catMaybes . (fmap b64) . chunkByteString . hexToByteString
+base64 = (mapMaybe b64) . chunkByteString . hexToByteString
