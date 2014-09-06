@@ -32,3 +32,6 @@ pairs _ = []
 
 byteStringToString :: BS.ByteString -> String
 byteStringToString = (fmap w8toChar) . BS.unpack
+
+toLower :: String -> String
+toLower = fmap C.toLower
