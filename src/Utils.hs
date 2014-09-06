@@ -31,4 +31,4 @@ pairs (c1 : c2 : s) = (c1, c2) : pairs s
 pairs _ = []
 
 byteStringToString :: BS.ByteString -> String
-byteStringToString = (fmap (C.chr . fromIntegral)) . BS.unpack
+byteStringToString = (fmap w8toChar) . BS.unpack
