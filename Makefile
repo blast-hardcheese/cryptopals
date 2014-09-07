@@ -15,3 +15,6 @@ S01C04:
 
 S01C05:
 	cabal exec -- runhaskell -isrc:src test/S01C05Spec.hs
+
+S01C06:
+	cabal exec -- runhaskell -isrc:src test/S01C06Spec.hs
