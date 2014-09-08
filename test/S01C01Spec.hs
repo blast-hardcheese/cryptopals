@@ -54,3 +54,23 @@ spec = do
     it "should encode a hex string into base64" $ do
         let hexstring = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d"
         base64 hexstring `shouldBe` "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
+
+  describe "unbase64" $ do
+    it "should step" $ do
+      step 0 (BS.empty, (0, 0)) `shouldBe` (BS.empty, (0, 6))
+      step 1 (BS.empty, (0, 0)) `shouldBe` (BS.empty, (1, 6))
+
+      let first = step 1 (BS.empty, (0, 0))
+      first `shouldBe` (BS.empty, (1, 6))
+
+      let second = step 0 first
+      second `shouldBe` (BS.pack [1], (0, 4))
+
+      let third = step 1 second
+      third `shouldBe` (BS.pack [16, 1], (0, 2))
+
+    it "should unchunk bytestring" $ do
+      unchunkByteString [0, 1, 0, 1] `shouldBe` BS.pack [0, 16, 1]
+
+    it "should decode 32 bytes" $ do
+      unbase64 "ABAB" `shouldBe` "001001"

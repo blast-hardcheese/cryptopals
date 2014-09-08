@@ -2,6 +2,7 @@ module S01C01 where
 
 import qualified Data.ByteString as BS
 import qualified Data.Word as W
+import Data.Word (Word8)
 import qualified Data.List as L
 import Data.Maybe
 import Control.Lens
@@ -19,8 +20,12 @@ unhex :: Char -> Maybe Int
 unhex c = L.findIndex (== C.toUpper c) ord
          where ord = "0123456789ABCDEF"
 
+b64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 b64 :: Int -> Maybe Char
-b64 b = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" ^? ix b
+b64 b = b64chars ^? ix b
+
+unb64 :: Char -> Maybe Int
+unb64 c = L.findIndex (== C.toUpper c) b64chars
 
 -- hex string to byte string
 hexToByteString :: String -> BS.ByteString
@@ -83,3 +88,24 @@ processBuffer in8 buff = (reverse r, b)
 
 base64 :: String -> String
 base64 = (mapMaybe b64) . chunkByteString . hexToByteString
+
+i2w8 :: Int -> Word8
+i2w8 = fromIntegral
+
+unchunkByteString :: [Int] -> BS.ByteString
+unchunkByteString = fst . (foldr (step . i2w8) (BS.empty, (0, 0)))
+
+step :: Word8 -> (BS.ByteString, B64Buff) -> (BS.ByteString, B64Buff)
+step b (bs, buff) = flushDecBuffer (bs, insertBuff b buff)
+    where insertBuff b (buff, bc) = ((shift (w8tow16 b) bc) .|. (shift buff 0), bc + 6)
+
+flushDecBuffer :: (BS.ByteString, B64Buff) -> (BS.ByteString, B64Buff)
+flushDecBuffer b@(bs, (buff, bc))
+    | bc < 8 = b
+    | otherwise = flushDecBuffer (newBS, (newBuff, bc - 8))
+        where newBuff = shiftR buff 8
+              consChar = buff `xor` (shift newBuff 8)
+              newBS = BS.cons (w16tow8 consChar) bs
+
+unbase64 :: String -> String
+unbase64 = bytestringToHex . unchunkByteString . (mapMaybe unb64)
