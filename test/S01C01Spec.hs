@@ -49,11 +49,17 @@ spec = do
         processBuffer eightBits (fourBits, 4) `shouldBe` ([sixBits, sixBits], (0, 0))
 
     it "should chunk a ByteString into 6-bit Word8s" $ do
-        chunkByteString (hexToByteString "13A1") `shouldBe` [4, 58]
+        chunkByteString (hexToByteString "13A1") `shouldBe` ([4, 58, 4], 1)
 
     it "should encode a hex string into base64" $ do
         let hexstring = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d"
         base64 hexstring `shouldBe` "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
+
+    it "should chunk partial byte strings" $ do
+        (chunkByteString $ BS.pack [0]) `shouldBe` ([0, 0], 2)
+
+    it "should appropriately pad" $ do
+        base64 "00" `shouldBe` "AA=="
 
   describe "unbase64" $ do
     it "should step" $ do

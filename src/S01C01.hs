@@ -55,17 +55,20 @@ hexpair i = do x <- hex (i `div` 16)
 -- base64 stuff
 type B64Buff = (W.Word16, Int)
 
-chunkByteString :: BS.ByteString -> [Int]
-chunkByteString bs = fmap w8toInt $ reverse $ concat words
+bufferToPartial :: B64Buff -> ([Word8], Int)
+bufferToPartial (0, 0) = ([], 0)
+bufferToPartial (buff, bs) = (fst $ doBuffer (shift buff offset, bs + offset), offset `div` 2)
+    where offset = 6 - bs
+
+chunkByteString :: BS.ByteString -> ([Int], Int)
+chunkByteString bs = (fmap w8toInt $ reverse $ concat words, paddingBits)
                      where (wholewords, newbuff) = BS.foldl chunkFold ([], (0, 0)) bs
-                           words = wholewords
+                           (padding, paddingBits) = bufferToPartial newbuff
+                           words = [padding] ++ wholewords
 
 chunkFold :: ([[W.Word8]], B64Buff) -> W.Word8 -> ([[W.Word8]], B64Buff)
 chunkFold (a, buff) n = (words : a, newbuff)
                         where (words, newbuff) = processBuffer n buff
-
-flushBuffer :: B64Buff -> [W.Word8]
-flushBuffer (bits, size) = fst $ doBuffer (bits, 6)
 
 doBuffer :: B64Buff -> ([W.Word8], B64Buff)
 doBuffer b@(bits, size)
@@ -87,7 +90,8 @@ processBuffer in8 buff = (reverse r, b)
                (r, b) = doBuffer (buffer, buffsize)
 
 base64 :: String -> String
-base64 = (mapMaybe b64) . chunkByteString . hexToByteString
+base64 hexString = (mapMaybe b64 bytes) ++ (take paddingBytes $ repeat '=')
+    where (bytes, paddingBytes) = chunkByteString $ hexToByteString hexString
 
 i2w8 :: Int -> Word8
 i2w8 = fromIntegral
