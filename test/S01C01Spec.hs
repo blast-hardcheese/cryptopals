@@ -76,7 +76,11 @@ spec = do
       third `shouldBe` (BS.pack [16, 1], (0, 2))
 
     it "should unchunk bytestring" $ do
-      unchunkByteString [0, 1, 0, 1] `shouldBe` BS.pack [0, 16, 1]
+      unchunkByteString (0, 0) [0, 1, 0, 1] `shouldBe` BS.pack [0, 16, 1]
 
     it "should decode 32 bytes" $ do
       unbase64 "ABAB" `shouldBe` "001001"
+
+    it "should support padding" $ do
+      unbase64 "AA==" `shouldBe` "00"
+      unbase64 "AQ==" `shouldBe` "01"

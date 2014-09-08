@@ -96,12 +96,12 @@ base64 hexString = (mapMaybe b64 bytes) ++ (take paddingBytes $ repeat '=')
 i2w8 :: Int -> Word8
 i2w8 = fromIntegral
 
-unchunkByteString :: [Int] -> BS.ByteString
-unchunkByteString = fst . (foldr (step . i2w8) (BS.empty, (0, 0)))
+unchunkByteString :: B64Buff -> [Int] -> BS.ByteString
+unchunkByteString buff xs = fst $ (foldr (step . i2w8) (BS.empty, buff)) xs
 
 step :: Word8 -> (BS.ByteString, B64Buff) -> (BS.ByteString, B64Buff)
 step b (bs, buff) = flushDecBuffer (bs, insertBuff b buff)
-    where insertBuff b (buff, bc) = ((shift (w8tow16 b) bc) .|. (shift buff 0), bc + 6)
+    where insertBuff b (buff, bc) = ((shift (w8tow16 b) bc) .|. buff, bc + 6)
 
 flushDecBuffer :: (BS.ByteString, B64Buff) -> (BS.ByteString, B64Buff)
 flushDecBuffer b@(bs, (buff, bc))
@@ -111,5 +111,12 @@ flushDecBuffer b@(bs, (buff, bc))
               consChar = buff `xor` (shift newBuff 8)
               newBS = BS.cons (w16tow8 consChar) bs
 
+unpad :: String -> (String, B64Buff)
+unpad s = (str, (0, -(padding * 2)))
+    where rev = L.reverse s
+          padding = L.length $ L.takeWhile (=='=') rev
+          str = L.reverse $ L.drop padding rev
+
 unbase64 :: String -> String
-unbase64 = bytestringToHex . unchunkByteString . (mapMaybe unb64)
+unbase64 paddedString = bytestringToHex $ unchunkByteString buff $ mapMaybe unb64 hexString
+    where (hexString, buff) = unpad paddedString
